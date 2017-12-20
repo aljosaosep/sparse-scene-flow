@@ -61,17 +61,6 @@ namespace SUN {
     namespace utils {
         namespace visualization {
 
-            void ArrowedLine(cv::Point2d pt1, cv::Point2d pt2, const cv::Scalar& color, cv::Mat &ref_image, int thickness, int line_type, int shift, double tipLength) {
-                const double tipSize = cv::norm(pt1-pt2)*tipLength; // Factor to normalize the size of the tip depending on the length of the arrow
-                cv::line(ref_image, pt1, pt2, color, thickness, line_type, shift);
-                const double angle = atan2( (double) pt1.y - pt2.y, (double) pt1.x - pt2.x );
-                cv::Point2d p(cvRound(pt2.x + tipSize * cos(angle + CV_PI / 4)), cvRound(pt2.y + tipSize * sin(angle + CV_PI / 4)));
-                cv::line(ref_image, p, pt2, color, thickness, line_type, shift);
-                p.x = cvRound(pt2.x + tipSize * cos(angle - CV_PI / 4));
-                p.y = cvRound(pt2.y + tipSize * sin(angle - CV_PI / 4));
-                cv::line(ref_image, p, pt2, color, thickness, line_type, shift);
-            }
-
             void DrawLine(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2, const SUN::utils::Camera &camera, cv::Mat &ref_image, const cv::Scalar &color, int thickness, int line_type, const cv::Point2i &offset) {
                 Eigen::Vector4d p1_4d, p2_4d;
                 p1_4d[3] = p2_4d[3] = 1.0;
@@ -117,9 +106,9 @@ namespace SUN {
             }
 
 
-            void DrawGridBirdeye(double res_x, double res_z, const SUN::utils::Camera &camera, const BirdEyeVizProperties &viz_props, cv::Mat &ref_image) {
+            void DrawGridBirdeye(double res_x, double res_z, const BirdEyeVizProperties &viz_props, cv::Mat &ref_image) {
 
-                auto color = cv::Scalar(0.5, 0.5, 0.5);
+                auto color = cv::Scalar(0.0, 0.0, 0.0);
                 // Draw horizontal lines
                 for (double i=0; i<viz_props.birdeye_far_plane_; i+=res_z) {
                     double x_1 = viz_props.birdeye_left_plane_;
@@ -164,7 +153,8 @@ namespace SUN {
                                     (-viz_props.birdeye_left_plane_+viz_props.birdeye_right_plane_)*viz_props.birdeye_scale_factor_, CV_32FC3);
                 ref_image.setTo(cv::Scalar(1.0, 1.0, 1.0));
 
-                DrawGridBirdeye(1, 1, camera, viz_props, ref_image);
+                DrawGridBirdeye(1.0, 1.0, viz_props, ref_image);
+
 
                 for (int i=0; i<pts.size(); i++) {
 
@@ -188,10 +178,23 @@ namespace SUN {
                         TransformPointToScaledFrustum(x_1, z_1, viz_props); //velocity[0], velocity[1]);
                         TransformPointToScaledFrustum(x_2, z_2, viz_props); //velocity[0], velocity[1]);
 
-                        SUN::utils::visualization::ArrowedLine(cv::Point(x_1, z_1), cv::Point(x_2, z_2), cv::Scalar(1.0, 0.0, 0.0), ref_image, 2);
+                        cv::arrowedLine(ref_image, cv::Point(x_1, z_1), cv::Point(x_2, z_2), cv::Scalar(1.0, 0.0, 0.0), 1);
                         cv::circle(ref_image, cv::Point(x_1, z_1), 3.0, cv::Scalar(0.0, 0.0, 1.0), -1.0);
                     }
                 }
+
+                // Coord. sys.
+                int arrow_len = 60;
+                int offset_y = 10;
+                cv::arrowedLine(ref_image, cv::Point(ref_image.cols/2, offset_y),
+                                cv::Point(ref_image.cols/2+arrow_len, offset_y),
+                                cv::Scalar(1.0, 0, 0), 2);
+                cv::arrowedLine(ref_image, cv::Point(ref_image.cols/2, offset_y),
+                                cv::Point(ref_image.cols/2, offset_y+arrow_len),
+                                cv::Scalar(0.0, 1.0, 0), 2);
+
+                //cv::putText(ref_image, "X", cv::Point(ref_image.cols/2+arrow_len+10, offset_y+10), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(1.0, 0, 0));
+                //cv::putText(ref_image, "Z", cv::Point(ref_image.cols/2+10, offset_y+arrow_len), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(0.0, 1.0, 0));
 
                 // Flip image, because it is more intuitive to have ref. point at the bottom of the image
                 cv::Mat dst;

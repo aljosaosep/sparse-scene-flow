@@ -58,8 +58,6 @@ namespace SUN {
             void DrawLine(const Eigen::Vector3d &p1, const Eigen::Vector3d &p2, const SUN::utils::Camera &camera, cv::Mat &ref_image,
                           const cv::Scalar &color, int thickness=1, int line_type=1, const cv::Point2i &offset=cv::Point2i(0,0));
 
-            void ArrowedLine(cv::Point2d pt1, cv::Point2d pt2, const cv::Scalar& color, cv::Mat &ref_image, int thickness=1, int line_type=8, int shift=0,
-                             double tipLength=0.1);
             void DrawTransparentSquare(cv::Point center, cv::Vec3b color, int radius, double alpha, cv::Mat &ref_image);
 
             // -------------------------------------------------------------------------------
@@ -82,7 +80,7 @@ namespace SUN {
 
             /// Bird-eye visualization tools
             void TransformPointToScaledFrustum(double &pose_x, double &pose_z, const BirdEyeVizProperties &viz_props);
-            void DrawGridBirdeye(double res_x, double res_z, const SUN::utils::Camera &camera, const BirdEyeVizProperties &viz_props, cv::Mat &ref_image);
+            void DrawGridBirdeye(double res_x, double res_z, const BirdEyeVizProperties &viz_props, cv::Mat &ref_image);
 
         }
     }
