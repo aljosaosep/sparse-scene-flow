@@ -197,7 +197,6 @@ int main(const int argc, const char** argv) {
     // -------------------------------------------------------------------------------
     // +++ MAIN_LOOP +++
     // -------------------------------------------------------------------------------
-    int num_frames_actually_processed = 0;
     const clock_t tracklet_gen_begin_time = clock();
     for (int current_frame=SparseFlowApp::start_frame; current_frame<=SparseFlowApp::end_frame; current_frame++) {
         const clock_t current_frame_begin_time = clock();
@@ -214,15 +213,8 @@ int main(const int argc, const char** argv) {
         // -------------------------------------------------------------------------------
         if (SparseFlowApp::debug_level > 0) printf("[Load data ...] \r\n");
         if (!dataset_assistant.LoadData(current_frame, SparseFlowApp::dataset)) {
-
-            if (num_frames_actually_processed>5) {
-                printf("WARNING: could not load data for frame %d, will write-out the results and terminate. \r\n", current_frame);
-                break;
-            }
-            else {
                 printf("Oh noes, dataset assistant can no load data! Abort! \r\n");
                 return -1;
-            }
         }
 
         if (SparseFlowApp::debug_level > 0) printf("[Load data OK!] \r\n");
@@ -286,7 +278,6 @@ int main(const int argc, const char** argv) {
         // -------------------------------------------------------------------------------
         // +++ Update stats and visualizations +++
         // -------------------------------------------------------------------------------
-
         // Viz. sparse flow 2D
         cv::Mat left_img_sparse_flow = left_image.clone();
         cv::Mat left_img_sparse_flow_3d;
@@ -304,19 +295,23 @@ int main(const int argc, const char** argv) {
 
         SUN::utils::visualization::BirdEyeVizProperties viz_props;
         viz_props.birdeye_scale_factor_ = 20.0;
-        viz_props.birdeye_left_plane_ = -10.0;
-        viz_props.birdeye_right_plane_ = 10.0;
-        viz_props.birdeye_far_plane_ = 30.0;
+        viz_props.birdeye_left_plane_ = -15.0;
+        viz_props.birdeye_right_plane_ = 15.0;
+        viz_props.birdeye_far_plane_ = 40.0;
         SUN::utils::visualization::DrawSparseFlowBirdeye(pts_p3d, pts_vel, left_camera, viz_props, left_img_sparse_flow_3d);
 
+        // Write viz. to file(s)
         char output_path_buff[500];
         snprintf(output_path_buff, 500, "%s/sceneflow_sparse_%s_%06d.png", output_dir_visual_results.c_str(), SparseFlowApp::subsequence_name.c_str(), current_frame);
         cv::imwrite(output_path_buff, left_img_sparse_flow);
 
+        snprintf(output_path_buff, 500, "%s/sceneflow_sparse_3D_%s_%06d.png", output_dir_visual_results.c_str(), SparseFlowApp::subsequence_name.c_str(), current_frame);
+        cv::imwrite(output_path_buff, left_img_sparse_flow_3d*255.0);
+
+        // Update viz. threads
         cv::imshow("visualization_2d_window", left_img_sparse_flow);
         cv::imshow("visualization_3d_window", left_img_sparse_flow_3d*255.0);
 
-        num_frames_actually_processed ++;
         printf("***** Processing time current frame: %.3f s*****\r\n", float( clock () - current_frame_begin_time ) /  CLOCKS_PER_SEC);
     }
 
