@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with
 rwth_mot framework; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
+
 #ifndef GOT_SPARSE_FLOW_H
 #define GOT_SPARSE_FLOW_H
 
@@ -64,7 +65,7 @@ namespace SUN {
 
             Eigen::Matrix4d EstimateEgomotion(libviso2::VisualOdometryStereo &viso, const cv::Mat &color_left, const cv::Mat &color_right);
 
-            }
+        }
     }
 }
 

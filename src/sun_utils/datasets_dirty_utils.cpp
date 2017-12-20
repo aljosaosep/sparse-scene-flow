@@ -24,13 +24,11 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 // boost
 #include <boost/filesystem.hpp>
 
-
 // opencv
 #include <opencv2/imgproc.hpp>
 
 // utils
 #include "sun_utils/utils_io.h"
-
 
 #define MAX_PATH_LEN 500
 
@@ -41,14 +39,10 @@ namespace SUN {
             // -------------------------------------------------------------------------------
             // +++ DATASET ASSISTANT IMPLEMENTATION +++
             // -------------------------------------------------------------------------------
-
             DatasetAssitantDirty::DatasetAssitantDirty(const po::variables_map &config_variables_map) {
                 this->variables_map_ = config_variables_map;
                 stereo_baseline_ = -1;
-
-                this->odometry_Rt.setIdentity();
             }
-
 
             bool DatasetAssitantDirty::LoadData(int current_frame, const std::string dataset_string) {
                 std::string dataset_str_lower = dataset_string;
@@ -66,14 +60,11 @@ namespace SUN {
             }
 
             bool DatasetAssitantDirty::LoadData__KITTI(int current_frame) {
+                assert (this->variables_map_.count("right_image_path"));
+                assert (this->variables_map_.count("left_image_path"));
+                assert (this->variables_map_.count("calib_path"));
 
-                // -------------------------------------------------------------------------------
-                // +++ ABSOLUTELY REQUIRED DATA +++
-                // -------------------------------------------------------------------------------
-                char left_image_path_buff[MAX_PATH_LEN];
-                snprintf(left_image_path_buff, MAX_PATH_LEN, this->variables_map_["left_image_path"].as<std::string>().c_str(), current_frame);
-
-                /// KITTI camera calibration
+                // KITTI camera calibration
                 SUN::utils::KITTI::Calibration calibration;
                 const std::string calib_path = this->variables_map_["calib_path"].as<std::string>();
                 if (!calibration.Open(calib_path)) {
@@ -81,55 +72,59 @@ namespace SUN {
                     return false;
                 }
 
-                /// Image data
+                // Image data
+                char left_image_path_buff[MAX_PATH_LEN];
+                snprintf(left_image_path_buff, MAX_PATH_LEN, this->variables_map_["left_image_path"].as<std::string>().c_str(), current_frame);
                 left_image_ = cv::imread(left_image_path_buff, CV_LOAD_IMAGE_COLOR);
                 if (left_image_.data == nullptr) {
                     printf("DatasetAssitantDirty error: could not load image: %s\r\n", left_image_path_buff);
                     return false;
                 }
 
-                /// Init camera and ground-model
+                // Right image
+                char right_image_path_buff[MAX_PATH_LEN];
+                snprintf(right_image_path_buff, MAX_PATH_LEN, this->variables_map_["right_image_path"].as<std::string>().c_str(), current_frame);
+                right_image_ = cv::imread(right_image_path_buff, CV_LOAD_IMAGE_COLOR);
+
+                if (right_image_.data == nullptr) {
+                    printf("DatasetAssitantDirty error: could not load image: %s\r\n", left_image_path_buff);
+                    return false;
+                }
+
+                // Init cameras
                 left_camera_.init(calibration.GetProjCam2(), Eigen::Matrix4d::Identity(), left_image_.cols, left_image_.rows);
                 right_camera_.init(calibration.GetProjCam3(), Eigen::Matrix4d::Identity(), left_image_.cols, left_image_.rows);
                 stereo_baseline_ = calibration.b();
 
-                // -------------------------------------------------------------------------------
-                // +++ OPTIONAL STUFF +++
-                // -------------------------------------------------------------------------------
-
-                /// Right image
-                if (this->variables_map_.count("right_image_path")) {
-                    char right_image_path_buff[MAX_PATH_LEN];
-                    snprintf(right_image_path_buff, MAX_PATH_LEN, this->variables_map_["right_image_path"].as<std::string>().c_str(), current_frame);
-                    right_image_ = cv::imread(right_image_path_buff, CV_LOAD_IMAGE_COLOR);
-
-                    if (right_image_.data == nullptr) {
-                        printf("DatasetAssitantDirty error: could not load image: %s\r\n", left_image_path_buff);
-                        return false;
-                    }
-                }
-
                 return true;
             }
 
-
-
             bool DatasetAssitantDirty::LoadData__OXFORD(int current_frame) {
-                // -------------------------------------------------------------------------------
-                // +++ ABSOLUTELY REQUIRED DATA +++
-                // -------------------------------------------------------------------------------
+
+                assert (this->variables_map_.count("right_image_path"));
+                assert (this->variables_map_.count("left_image_path"));
+                assert (this->variables_map_.count("calib_path"));
+
+                // Left image
                 char left_image_path_buff[MAX_PATH_LEN];
                 snprintf(left_image_path_buff, MAX_PATH_LEN, this->variables_map_["left_image_path"].as<std::string>().c_str(), current_frame);
-
-
-                /// Image data
                 left_image_ = cv::imread(left_image_path_buff, CV_LOAD_IMAGE_COLOR);
                 if (left_image_.data == nullptr) {
                     printf("DatasetAssitantDirty error: could not load image: %s\r\n", left_image_path_buff);
                     return false;
                 }
 
-                /// Init camera and ground-model
+                // Right image
+                char right_image_path_buff[MAX_PATH_LEN];
+                snprintf(right_image_path_buff, MAX_PATH_LEN, this->variables_map_["right_image_path"].as<std::string>().c_str(), current_frame);
+                right_image_ = cv::imread(right_image_path_buff, CV_LOAD_IMAGE_COLOR);
+
+                if (right_image_.data == nullptr) {
+                    printf("DatasetAssitantDirty error: could not load image: %s\r\n", left_image_path_buff);
+                    return false;
+                }
+
+                /// Init camera
                 const std::string calib_path = this->variables_map_["calib_path"].as<std::string>();
                 auto getIntrinsicMatOxford = [calib_path](char *which_cam)->Eigen::Matrix3d {
                     char buff[500];
@@ -164,26 +159,9 @@ namespace SUN {
                 Eigen::Matrix<double, 3, 4> P_left = K_left * T_left * R;
                 Eigen::Matrix<double, 3, 4> P_right = K_right * T_right * R;
 
-                // TODO
                 left_camera_.init(P_left, Eigen::Matrix4d::Identity(), left_image_.cols, left_image_.rows);
                 right_camera_.init(P_right, Eigen::Matrix4d::Identity(), left_image_.cols, left_image_.rows);
                 stereo_baseline_ = oxford_b;
-
-                // -------------------------------------------------------------------------------
-                // +++ OPTIONAL STUFF +++
-                // -------------------------------------------------------------------------------
-
-                /// Right image
-                if (this->variables_map_.count("right_image_path")) {
-                    char right_image_path_buff[MAX_PATH_LEN];
-                    snprintf(right_image_path_buff, MAX_PATH_LEN, this->variables_map_["right_image_path"].as<std::string>().c_str(), current_frame);
-                    right_image_ = cv::imread(right_image_path_buff, CV_LOAD_IMAGE_COLOR);
-
-                    if (right_image_.data == nullptr) {
-                        printf("DatasetAssitantDirty error: could not load image: %s\r\n", left_image_path_buff);
-                        return false;
-                    }
-                }
 
                 return true;
             }

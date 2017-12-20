@@ -66,7 +66,6 @@ namespace SUN {
                 return true;
             }
 
-
             bool MakeDir(const char *path) {
                 if (!path) {
                     return false;

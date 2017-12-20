@@ -18,9 +18,11 @@ You should have received a copy of the GNU General Public License along with
 rwth_mot framework; if not, write to the Free Software Foundation, Inc., 51 Franklin
 Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
-#include "utils_flow.h"
+
 
 #include <libviso2/viso_stereo.h>
+
+#include "utils_flow.h"
 
 namespace SUN {
     namespace utils {
@@ -67,7 +69,6 @@ namespace SUN {
                 }
 
                 return ret;
-
             }
 
             std::vector<libviso2::Matcher::p_match>
@@ -96,7 +97,6 @@ namespace SUN {
 
                 // Push images
                 M->pushBack(left_img_data, right_img_data, dims, false);
-
 
                 std::vector<libviso2::Matcher::p_match> matches;
                 if (!only_push) {
@@ -146,19 +146,11 @@ namespace SUN {
                     //p3d_c.head<3>() = camera.ground_model()->ProjectPointToGround(p3d_c.head<3>());
                     //p3d_p.head<3>() = camera.ground_model()->ProjectPointToGround(p3d_p.head<3>());
 
-                    // TODO: remove weird estimates
-                    // TODO ...
-
-                    // handle numerical problems (only consider reasonable range)
-                    // delInd = abs(Xc)>tritrack_params.thres.maxLat | abs(Zc)>tritrack_params.thres.maxDist | abs(Xp)>tritrack_params.thres.maxLat | abs(Zp)>tritrack_params.thres.maxDist;
                     int max_dist = 90;
                     int max_lat = 30;
-
                     if (std::fabs(p3d_c[0]) > max_lat || std::fabs(p3d_c[2]) > max_dist || std::fabs(p3d_p[0]) > max_lat || std::fabs(p3d_p[2]) > max_dist)
                         continue;
 
-
-                    // TODO: compute diffs
                     Eigen::Vector3d delta = (p3d_c - p3d_p).head<3>();
 
                     if (delta.norm()*(1.0/dt) < max_velocity_ms) {
@@ -200,12 +192,7 @@ namespace SUN {
                 Eigen::Matrix<double,4,4> egomotion_eigen = Eigen::MatrixXd::Identity(4,4); // Current pose
                 int32_t dims[] = {width,height,width};
                 if (viso.process(left_img_data,right_img_data,dims)) {
-                    // on success, update current pose
-                    //std::vector<int32_t> inlier_indices = viso->getInlierIndices();
-                    //std::vector<libviso2::Matcher::p_match> matches = viso.getMatches();
-                    //ret_matches = matches; // Return over the ref.
                     libviso2::Matrix frame_to_frame_motion = viso.getMotion(); //libviso2::Matrix::inv(viso->getMotion());
-                    //ret_Tr = frame_to_frame_motion; // Return over the ref.
                     for(size_t i=0; i<4; i++){
                         for(size_t j=0; j<4; j++){
                             egomotion_eigen(i,j) = frame_to_frame_motion.val[i][j];

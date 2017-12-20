@@ -28,7 +28,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/core/core.hpp>
 
-
 // eigen
 #include <Eigen/Dense>
 
@@ -182,9 +181,9 @@ namespace SUN {
                     double z_2 = z_1 + dir[2];
 
                     if (x_1 > viz_props.birdeye_left_plane_ && x_2 > viz_props.birdeye_left_plane_ &&
-                            x_1 < viz_props.birdeye_right_plane_ && x_2 < viz_props.birdeye_right_plane_ &&
-                            z_1 > 0 && z_2 > 0 &&
-                            z_1 < viz_props.birdeye_far_plane_ && z_2 < viz_props.birdeye_far_plane_) {
+                        x_1 < viz_props.birdeye_right_plane_ && x_2 < viz_props.birdeye_right_plane_ &&
+                        z_1 > 0 && z_2 > 0 &&
+                        z_1 < viz_props.birdeye_far_plane_ && z_2 < viz_props.birdeye_far_plane_) {
 
                         TransformPointToScaledFrustum(x_1, z_1, viz_props); //velocity[0], velocity[1]);
                         TransformPointToScaledFrustum(x_2, z_2, viz_props); //velocity[0], velocity[1]);

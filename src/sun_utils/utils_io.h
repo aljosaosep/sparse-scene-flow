@@ -37,8 +37,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 // OpenCV
 #include <opencv2/core/core.hpp>
 
-
-
 // Forward declarations
 namespace SUN { class DisparityMap; }
 namespace SUN { namespace utils { class DetectionLayer; } }
@@ -54,7 +52,6 @@ namespace SUN {
                * @param[in] cols
                * @param[in] mat_out
                * @return Sucess flag.
-               * @author Aljosa (osep@vision.rwth-aachen.de)
                */
             bool ReadEigenMatrixFromTXT(const char *filename, Eigen::MatrixXd &mat_out);
 
@@ -64,7 +61,6 @@ namespace SUN {
                * @param[in] mat
                * @param[in] filename
                * @return Returns true upon successful creation of directory.
-               * @author Aljosa (osep@vision.rwth-aachen.de)
                */
             bool MakeDir(const char *path);
             
