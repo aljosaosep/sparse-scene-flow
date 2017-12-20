@@ -28,8 +28,10 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 // Boost
 #include <boost/program_options.hpp>
 
-#include "sun_utils/camera.h"
-#include "utils_kitti.h"
+// KITTI
+#include <libkitti/kitti.h>
+
+#include "camera.h"
 
 namespace po = boost::program_options;
 

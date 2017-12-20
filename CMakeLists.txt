@@ -29,9 +29,9 @@ include_directories(include ${PROJECT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS} )
 file(GLOB PROJ_SRC_FILES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
-file(GLOB SUN_UTILS_SRC_FILES ${CMAKE_SOURCE_DIR}/src/sun_utils/*.cpp)
-set(SUN_UTILS_SRC_DIR ${CMAKE_SOURCE_DIR}/src/sun_utils)
-include_directories(${SUN_UTILS_SRC_DIR})
+file(GLOB SFLOW_SRC_FILES ${CMAKE_SOURCE_DIR}/src/sparseflow/*.cpp)
+set(SFLOW_SRC_DIR ${CMAKE_SOURCE_DIR}/src/sparseflow)
+include_directories(${SFLOW_SRC_DIR})
 
 # Libraries
 add_library (viso2
@@ -53,7 +53,14 @@ add_library (viso2
         include/libviso2/filter.h
         )
 
+add_library (kitti
+        src/libkitti/kitti.cpp
+        src/libkitti/kitti.h
+        )
+
 target_link_libraries(viso2)
+target_link_libraries(kitti)
+
 add_subdirectory(apps)
 
 # Debug infos

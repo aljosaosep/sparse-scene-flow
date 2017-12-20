@@ -39,7 +39,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 // For convenience.
 namespace po = boost::program_options;
 
-namespace CAMOTApp {
+namespace SparseFlowApp {
 
     // Application data.
     int debug_level;
@@ -136,17 +136,16 @@ int main(const int argc, const char** argv) {
 
     /// Parse command args
     po::variables_map variables_map;
-    if (!CAMOTApp::ParseCommandArguments(argc, argv, variables_map)) {
+    if (!SparseFlowApp::ParseCommandArguments(argc, argv, variables_map)) {
         printf("Error parsing command args/configs, exiting.\r\n");
         return -1;
     }
 
-    const int num_frames = CAMOTApp::end_frame-CAMOTApp::start_frame;
+    const int num_frames = SparseFlowApp::end_frame-SparseFlowApp::start_frame;
 
     // Makes sure the relevant values are correct.
     assert(num_frames>0);
-    assert(CAMOTApp::debug_level>=0);
-
+    assert(SparseFlowApp::debug_level>=0);
 
     std::cout << "Init dataset assistant ..." << std::endl;
     SUN::utils::dirty::DatasetAssitantDirty dataset_assistant(variables_map);
@@ -155,15 +154,13 @@ int main(const int argc, const char** argv) {
     // +++ Output (sub) directories +++
     // -------------------------------------------------------------------------------
     bool make_dir_success;
-
-    // You can add more output sub-dir's!
-    if (CAMOTApp::debug_level > 0) printf("[Creating output dirs in:%s] \r\n", CAMOTApp::output_dir.c_str());
-    std::string output_dir_visual_results = CAMOTApp::output_dir + "/visual_results";
+    if (SparseFlowApp::debug_level > 0) printf("[Creating output dirs in:%s] \r\n", SparseFlowApp::output_dir.c_str());
+    std::string output_dir_visual_results = SparseFlowApp::output_dir + "/visual_results";
     make_dir_success = SUN::utils::IO::MakeDir(output_dir_visual_results.c_str());
     assert(make_dir_success);
 
     // -------------------------------------------------------------------------------
-    // +++ Init visual odometry module +++
+    // +++ Init visual odometry module and matcher +++
     // -------------------------------------------------------------------------------
     std::shared_ptr<libviso2::VisualOdometryStereo> vo_module = nullptr;
     auto InitVO = [](std::shared_ptr<libviso2::VisualOdometryStereo> &vo, double f, double c_u, double c_v, double baseline) {
@@ -187,8 +184,10 @@ int main(const int argc, const char** argv) {
     // +++ Per-frame containers +++
     // -------------------------------------------------------------------------------
     cv::Mat left_image;
-    // -------------------------------------------------------------------------------
 
+    // -------------------------------------------------------------------------------
+    // +++ Viz. threads +++
+    // -------------------------------------------------------------------------------
     cv::namedWindow("visualization_2d_window");
     cv::startWindowThread();
 
@@ -200,12 +199,12 @@ int main(const int argc, const char** argv) {
     // -------------------------------------------------------------------------------
     int num_frames_actually_processed = 0;
     const clock_t tracklet_gen_begin_time = clock();
-    for (int current_frame=CAMOTApp::start_frame; current_frame<=CAMOTApp::end_frame; current_frame++) {
+    for (int current_frame=SparseFlowApp::start_frame; current_frame<=SparseFlowApp::end_frame; current_frame++) {
         const clock_t current_frame_begin_time = clock();
 
-        if (CAMOTApp::debug_level > 0) {
+        if (SparseFlowApp::debug_level > 0) {
             printf("---------------------------\r\n");
-            printf("| PROC FRAME %03d/%03d    |\r\n", current_frame, CAMOTApp::end_frame);
+            printf("| PROC FRAME %03d/%03d    |\r\n", current_frame, SparseFlowApp::end_frame);
             printf("---------------------------\r\n");
 
         }
@@ -213,8 +212,8 @@ int main(const int argc, const char** argv) {
         // -------------------------------------------------------------------------------
         // +++ Load data +++
         // -------------------------------------------------------------------------------
-        if (CAMOTApp::debug_level > 0) printf("[Load data ...] \r\n");
-        if (!dataset_assistant.LoadData(current_frame, CAMOTApp::dataset)) {
+        if (SparseFlowApp::debug_level > 0) printf("[Load data ...] \r\n");
+        if (!dataset_assistant.LoadData(current_frame, SparseFlowApp::dataset)) {
 
             if (num_frames_actually_processed>5) {
                 printf("WARNING: could not load data for frame %d, will write-out the results and terminate. \r\n", current_frame);
@@ -226,7 +225,7 @@ int main(const int argc, const char** argv) {
             }
         }
 
-        if (CAMOTApp::debug_level > 0) printf("[Load data OK!] \r\n");
+        if (SparseFlowApp::debug_level > 0) printf("[Load data OK!] \r\n");
         left_image = dataset_assistant.left_image_.clone();
         auto &left_camera = dataset_assistant.left_camera_;
         auto &right_camera = dataset_assistant.right_camera_;
@@ -237,17 +236,17 @@ int main(const int argc, const char** argv) {
 
         Eigen::Matrix4d ego_estimate = Eigen::Matrix4d::Identity();
         if (dataset_assistant.right_image_.data != nullptr) {
-            if (CAMOTApp::debug_level > 0) printf("[Processing VO ...] \r\n");
+            if (SparseFlowApp::debug_level > 0) printf("[Processing VO ...] \r\n");
 
             InitVO(vo_module, left_camera.f_u(), left_camera.c_u(), left_camera.c_v(), dataset_assistant.stereo_baseline_);
             ego_estimate = SUN::utils::scene_flow::EstimateEgomotion(*vo_module, dataset_assistant.left_image_, dataset_assistant.right_image_);
 
             // Accumulated transformation
-            CAMOTApp::egomotion = CAMOTApp::egomotion * ego_estimate.inverse();
+            SparseFlowApp::egomotion = SparseFlowApp::egomotion * ego_estimate.inverse();
 
             // Update left_camera, right_camera using estimated pose transform
-            left_camera.ApplyPoseTransform(CAMOTApp::egomotion);
-            right_camera.ApplyPoseTransform(CAMOTApp::egomotion);
+            left_camera.ApplyPoseTransform(SparseFlowApp::egomotion);
+            right_camera.ApplyPoseTransform(SparseFlowApp::egomotion);
         } else {
             printf("You want to compute visual odom., but got no right image. Not possible.\r\n");
             exit(EXIT_FAILURE);
@@ -259,24 +258,25 @@ int main(const int argc, const char** argv) {
         // -------------------------------------------------------------------------------
         std::vector<SUN::utils::scene_flow::VelocityInfo> sparse_flow_info;
         cv::Mat sparse_flow_map;
-        bool first_frame = current_frame <= CAMOTApp::start_frame;
+        bool first_frame = current_frame <= SparseFlowApp::start_frame;
         bool use_sparse_flow = true;
 
 
         if (dataset_assistant.right_image_.data != nullptr) {
             const clock_t sceneflow_start = clock();
-            if (CAMOTApp::debug_level > 0) printf("[Computing sparse scene flow ...] \r\n");
+            if (SparseFlowApp::debug_level > 0) printf("[Computing sparse scene flow ...] \r\n");
             auto matches = SUN::utils::scene_flow::GetMatches(matcher, left_image,
                                                               dataset_assistant.right_image_,
                                                               left_camera, dataset_assistant.stereo_baseline_, first_frame);
             if (!first_frame) {
-                auto flow_result = SUN::utils::scene_flow::GetSceneFlow(matches, ego_estimate, left_camera, dataset_assistant.stereo_baseline_,
+                auto flow_result = SUN::utils::scene_flow::GetSceneFlow(matches, ego_estimate, left_camera,
+                                                                        dataset_assistant.stereo_baseline_,
                                                                         variables_map.at("dt").as<double>(),
                                                                         variables_map.at("max_velocity_threshold").as<double>());
                 sparse_flow_info = std::get<1>(flow_result);
                 sparse_flow_map = std::get<0>(flow_result);
             }
-            if (CAMOTApp::debug_level > 0) printf("[ Processing sparse scene flow %.3f s ]\r\n", float((clock() - sceneflow_start)) / CLOCKS_PER_SEC);
+            if (SparseFlowApp::debug_level > 0) printf("[ Processing sparse scene flow %.3f s ]\r\n", float((clock() - sceneflow_start)) / CLOCKS_PER_SEC);
         } else {
             printf("You want to compute sparse flow, but got no right image. Not possible.\r\n");
             exit(EXIT_FAILURE);
@@ -310,7 +310,7 @@ int main(const int argc, const char** argv) {
         SUN::utils::visualization::DrawSparseFlowBirdeye(pts_p3d, pts_vel, left_camera, viz_props, left_img_sparse_flow_3d);
 
         char output_path_buff[500];
-        snprintf(output_path_buff, 500, "%s/sceneflow_sparse_%s_%06d.png", output_dir_visual_results.c_str(), CAMOTApp::subsequence_name.c_str(), current_frame);
+        snprintf(output_path_buff, 500, "%s/sceneflow_sparse_%s_%06d.png", output_dir_visual_results.c_str(), SparseFlowApp::subsequence_name.c_str(), current_frame);
         cv::imwrite(output_path_buff, left_img_sparse_flow);
 
         cv::imshow("visualization_2d_window", left_img_sparse_flow);

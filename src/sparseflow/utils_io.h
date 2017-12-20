@@ -37,11 +37,6 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 // OpenCV
 #include <opencv2/core/core.hpp>
 
-// Forward declarations
-namespace SUN { class DisparityMap; }
-namespace SUN { namespace utils { class DetectionLayer; } }
-namespace GOT { namespace segmentation { class ObjectProposal; } }
-
 namespace SUN {
     namespace utils {
         namespace IO {

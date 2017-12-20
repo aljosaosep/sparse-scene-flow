@@ -28,7 +28,7 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <opencv2/imgproc.hpp>
 
 // utils
-#include "sun_utils/utils_io.h"
+#include "utils_io.h"
 
 #define MAX_PATH_LEN 500
 

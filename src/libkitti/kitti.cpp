@@ -19,7 +19,7 @@ rwth_mot framework; if not, write to the Free Software Foundation, Inc., 51 Fran
 Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include "utils_kitti.h"
+#include "kitti.h"
 
 // Boost includes
 #include <boost/algorithm/string/split.hpp>
