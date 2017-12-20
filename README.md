@@ -1,10 +1,7 @@
-# Combined Image- and World-Space Tracking in Traffic Scenes
+# Sparse Scene Flow
 
-This repository contains code for the tracking system as described in
-**Combined Image- and World-Space Tracking in Traffic Scenes. ICRA 2017. (https://www.vision.rwth-aachen.de/media/papers/paper_final_compressed.pdf)**
-
-By Aljosa Osep, Wolfgang Mehner, Markus Mathias, Bastian Leibe at Computer Vision Group, RWTH Aachen University
-
+This repository contains code for sparse scene flow method, used in P. Lenz etal.: Sparse Scene Flow Segmentation for Moving Object Detection in Urban Environments, Intelligent Vehicles Symposium (IV), 2011
+ 
 ## Demo  Video
 TODO
 
@@ -16,7 +13,6 @@ In order to run the code, your setup has to meet the following minimum requireme
   * Eigen (3.x)
   * Boost (1.55 or later)
   * OpenCV (3.2.0 + OpenCV contrib)
-  * PCL (1.8.x)
 
 ## Install
 
@@ -32,25 +28,12 @@ In order to run the code, your setup has to meet the following minimum requireme
 
 ## Remarks
 
-* Tracking modes
-    * There are two tracking modes, `detection` and `detection_shape` (set via `--tracking_mode`, or set in the config)
-    * They perform similarly when evaluating MOTA in image-domain (KITTI eval. protocol), `detection_shape` provides significantly more precise localization in the 3D space while the `detection` mode is faster.
-
-* Data preprocessing
-    * The tracker requires disparity maps to run, `detection_shape` additionally requires 3D segments (eg. generic object proposals, shipped with the tracker).
-    * When you run the tracker for the first time, both will be computed on-the-fly, which will significantly slow-down the proc. time.
 
 * External libraries
     * The tracker ships the following external modules:
-        * **libelas** - disparity estimation (http://www.cvlibs.net/software/libelas/)
         * **libviso2** - egomotion estimation (http://www.cvlibs.net/software/libviso/)
 
-* Etc
-    * The tracking framework does not ship a scene-flow estimator (you can get one here https://github.com/vogechri/PRSM)
-    * In the paper experiments, we additionally used a scene-flow estimator to obtain velocity estimates of the 3D segments. You can input to the tracker velocity maps via `--flow_map_path`, but it is not necessary. Tracker will work just fine without it.
-
-
-* Run the tracker in `release` mode (oterwise it will be slow).
+* For optimal performance, run the sf-estimator in `release` mode.
 
 If you have any issues or questions about the code, please contact me https://www.vision.rwth-aachen.de/person/13/
 
@@ -58,27 +41,12 @@ If you have any issues or questions about the code, please contact me https://ww
 
 If you find the tracker useful in your research, please consider citing:
 
-    @inproceedings{Osep17ICRA,
-      title={Combined Image- and World-Space Tracking in Traffic Scenes},
-      author={O\v{s}ep, Aljo\v{s}a and Mehner, Wolfgang and Mathias, Markus and Leibe, Bastian},
-      booktitle={ICRA},
-      year={2017}
-    }
-
-    @inproceedings{Osep16ICRA,
-      title={Multi-Scale Object Candidates for Generic Object Tracking in Street
-    Scenes},
-      author={O\v{s}ep, Aljo\v{s}a and Hermans, Alexander and Engelmann, Francis and Klostermann, Dirk and and Mathias, Markus and Leibe, Bastian},
-      booktitle={ICRA},
-      year={2016}
-    }
-
-    @inproceedings{klostermann2016_smps,
-      title = {Unsupervised Learning of Shape-Motion Patterns for Objects in Urban Street Scenes},
-      author = {Dirk Klostermann and Aljosa Osep and J\"org St\"uckler and Bastian Leibe},
-      booktitle = {Proc. of the British Machine Vision Conference (BMVC)},
-      year = {2016}, note = {to appear}
-    }
+	@inproceedings{Lenz2011IV,
+	  author = {Philip Lenz and Julius Ziegler and Andreas Geiger and Martin Roser},
+	  title = {Sparse Scene Flow Segmentation for Moving Object Detection in Urban Environments},
+	  booktitle = {Intelligent Vehicles Symposium (IV)},
+	  year = {2011}
+	}
 
 ## License
 
