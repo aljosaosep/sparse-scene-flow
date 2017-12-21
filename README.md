@@ -1,37 +1,42 @@
 # Sparse Scene Flow
 
-This repository contains code for sparse scene flow method, used in P. Lenz etal.: Sparse Scene Flow Segmentation for Moving Object Detection in Urban Environments, Intelligent Vehicles Symposium (IV), 2011
- 
+This repository contains code for sparse scene flow estimation using stereo cameras, proposed by P. Lenz etal.: Sparse Scene Flow Segmentation for Moving Object Detection in 
+Urban Environments, Intelligent Vehicles Symposium (IV), 2011.
+This method can be used as a component in your 
+visual object tracking / 3D reconstruction / SLAM applications 
+as an alternative to dense (and typically expensive to compute) scene flow methods.
+
+![Alt text](images/flow_image.png?raw=true "Title")
+![Alt text](images/flow_topdown.png?raw=true "Title")
+
+If you want to know what is the difference between scene and optical flow, 
+see [this quora thread](https://www.quora.com/What-is-the-difference-between-scene-flow-and-optical-flow).
 ## Demo  Video
-TODO
+[Click here to watch video](https://www.youtube.com/watch?v=SavxW1UuGKM).
 
 ## Prerequisite
-
 In order to run the code, your setup has to meet the following minimum requirements (tested versions in parentheses. Other versions might work, too):
 
 * GCC 4.8.4
   * Eigen (3.x)
   * Boost (1.55 or later)
-  * OpenCV (3.2.0 + OpenCV contrib)
+  * OpenCV (3.2.0 or later)
 
 ## Install
-
 ### Compiling the code using CMake
 0.  `mkdir build`
 0.  `cmake ..`
 0.  `make all`
 
-### Running the tracker
-0.  Edit the config `%PROJ_DIR%/data/kitti_sample.cfg`, set all the paths.
-0.  Run the tracker eg. `CIWTApp --config %PROJ_DIR%/data/kitti_sample.cfg --start_frame 0 --end_frame 15 --show_visualization_2d --show_visualization_3d`
-0.  Find a small sample of KITTI tracking dataset in `%PROJ_DIR%/data/kitti_sample` (left/right camera images, Regionlets detections, calibration files).
+### Running the sparse flow app
+0.  Download KITTI or Daimler Robotcar dataset.
+0.  Edit the config `%PROJ_DIR%/data/kitti_sample.cfg`, set all the paths (left/right image path, camera calibration).
+0.  Run the sparse flow app eg. `sparseflow --config %PROJ_DIR%/config/default.cfg --start_frame 0 --end_frame 100`
 
 ## Remarks
-
-
 * External libraries
     * The tracker ships the following external modules:
-        * **libviso2** - egomotion estimation (http://www.cvlibs.net/software/libviso/)
+        * **libviso2** - egomotion estimation, feature matching (http://www.cvlibs.net/software/libviso/)
 
 * For optimal performance, run the sf-estimator in `release` mode.
 
@@ -39,7 +44,7 @@ If you have any issues or questions about the code, please contact me https://ww
 
 ## Citing
 
-If you find the tracker useful in your research, please consider citing:
+If you find this code useful in your research, you should cite:
 
 	@inproceedings{Lenz2011IV,
 	  author = {Philip Lenz and Julius Ziegler and Andreas Geiger and Martin Roser},
