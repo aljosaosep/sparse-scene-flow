@@ -6,8 +6,7 @@ This method can be used as a component in your
 visual object tracking / 3D reconstruction / SLAM applications 
 as an alternative to dense (and typically expensive to compute) scene flow methods.
 
-![Alt text](images/flow_image.png?raw=true "Title")
-![Alt text](images/flow_topdown.png?raw=true "Title")
+![Alt text](images/flow_image_combined.png?raw=true "Scene flow, image-view and top-down view.")
 
 If you want to know what is the difference between scene and optical flow, 
 see [this quora thread](https://www.quora.com/What-is-the-difference-between-scene-flow-and-optical-flow).
