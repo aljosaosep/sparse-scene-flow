@@ -11,7 +11,7 @@ as an alternative to dense (and typically expensive to compute) scene flow metho
 If you want to know what is the difference between scene and optical flow, 
 see [this quora thread](https://www.quora.com/What-is-the-difference-between-scene-flow-and-optical-flow).
 ## Demo  Video
-[Click here to watch video](https://www.youtube.com/watch?v=SavxW1UuGKM).
+[Click here to watch the video](https://www.youtube.com/watch?v=SavxW1UuGKM).
 
 ## Prerequisite
 In order to run the code, your setup has to meet the following minimum requirements (tested versions in parentheses. Other versions might work, too):
