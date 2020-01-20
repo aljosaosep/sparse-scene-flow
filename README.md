@@ -30,7 +30,7 @@ In order to run the code, your setup has to meet the following minimum requireme
 0.  `make all`
 
 ### Running the sparse flow app
-0.  Download KITTI or Daimler Robotcar dataset.
+0.  Download KITTI or Oxford Robotcar dataset.
 0.  Edit the config `%PROJ_DIR%/data/kitti_sample.cfg`, set all the paths (left/right image path, camera calibration).
 0.  Run the sparse flow app eg. `sparseflow --config %PROJ_DIR%/config/default.cfg --start_frame 0 --end_frame 100`
 
