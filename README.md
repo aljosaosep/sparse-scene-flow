@@ -6,6 +6,8 @@ This method can be used as a component in your
 visual object tracking / 3D reconstruction / SLAM applications 
 as an alternative to dense (and typically expensive to compute) scene flow methods.
 
+Note: The repository contains scene flow estimator only, there is no implementation for scene flow clustering or object tracking provided in this repository.
+
 ![Alt text](images/flow_image_combined.png?raw=true "Scene flow, image-view and top-down view.")
 
 If you want to know what is the difference between scene and optical flow, 
