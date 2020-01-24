@@ -16,8 +16,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
 
-find_package(Boost 1.61.0 REQUIRED COMPONENTS program_options filesystem)
+find_package(Boost 1.58.0 REQUIRED COMPONENTS program_options filesystem)
 find_package(OpenCV 3.2.0 REQUIRED COMPONENTS core highgui imgproc calib3d)
+find_package(pybind11 REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
 find_package(Eigen3 REQUIRED)
