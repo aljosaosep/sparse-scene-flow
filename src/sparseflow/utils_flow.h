@@ -29,8 +29,8 @@ Street, Fifth Floor, Boston, MA 02110-1301, USA
 #include <Eigen/Core>
 
 // cv
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
+//#include <opencv2/core.hpp>
+//#include <opencv2/imgproc.hpp>
 
 // utils
 #include "camera.h"
@@ -52,18 +52,19 @@ namespace SUN {
 
             libviso2::Matcher *InitMatcher();
 
-            Eigen::Vector4d ProjTo3D(float u1, float u2, float v, const SUN::utils::Camera &camera, float baseline);
-
-            std::vector<libviso2::Matcher::p_match>
-            GetMatches(libviso2::Matcher *M, const cv::Mat &color_left, const cv::Mat &color_right,
-                       const SUN::utils::Camera &camera,
-                       float baseline, bool only_push);
-
-            std::tuple<cv::Mat, std::vector<VelocityInfo> >
-            GetSceneFlow(std::vector<libviso2::Matcher::p_match> quad_matches, const Eigen::Matrix4d Tr, const SUN::utils::Camera &camera,
-                         float baseline, float dt, float max_velocity_ms=40.0);
-
-            Eigen::Matrix4d EstimateEgomotion(libviso2::VisualOdometryStereo &viso, const cv::Mat &color_left, const cv::Mat &color_right);
+//            Eigen::Vector4d ProjTo3D(float u1, float u2, float v, const SUN::utils::Camera &camera, float baseline);
+//            // Eigen::Vector4d ProjTo3D_(float u1, float u2, float v, float f, float cu, float cv, float baseline);
+//
+//            std::vector<libviso2::Matcher::p_match>
+//            GetMatches(libviso2::Matcher *M, const cv::Mat &color_left, const cv::Mat &color_right,
+//                       const SUN::utils::Camera &camera,
+//                       float baseline, bool only_push);
+//
+//            std::tuple<cv::Mat, std::vector<VelocityInfo> >
+//            GetSceneFlow(std::vector<libviso2::Matcher::p_match> quad_matches, const Eigen::Matrix4d Tr, const SUN::utils::Camera &camera,
+//                         float baseline, float dt, float max_velocity_ms=40.0);
+//
+//            Eigen::Matrix4d EstimateEgomotion(libviso2::VisualOdometryStereo &viso, const cv::Mat &color_left, const cv::Mat &color_right);
 
         }
     }
