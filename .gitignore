@@ -1,1 +1,5 @@
 *.idea
+*.txt
+*.cmake
+*.out
+cmake-build-*
