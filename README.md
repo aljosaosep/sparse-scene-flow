@@ -20,8 +20,7 @@ In order to run the code, your setup has to meet the following minimum requireme
 
 * GCC 4.8.4
   * Eigen (3.x)
-  * Boost (1.55 or later)
-  * OpenCV (3.2.0 or later)
+  * pybind11
 
 ## Install
 ### Compiling the code using CMake
@@ -30,9 +29,8 @@ In order to run the code, your setup has to meet the following minimum requireme
 0.  `make all`
 
 ### Running the sparse flow app
-0.  Download KITTI or Daimler Robotcar dataset.
-0.  Edit the config `%PROJ_DIR%/data/kitti_sample.cfg`, set all the paths (left/right image path, camera calibration).
-0.  Run the sparse flow app eg. `sparseflow --config %PROJ_DIR%/config/default.cfg --start_frame 0 --end_frame 100`
+0.  Download KITTI
+0.  See python/python_example.py to see how to use visual odometry estimator
 
 ## Remarks
 * External libraries
@@ -40,6 +38,8 @@ In order to run the code, your setup has to meet the following minimum requireme
         * **libviso2** - egomotion estimation, feature matching (http://www.cvlibs.net/software/libviso/)
 
 * For optimal performance, run the sf-estimator in `release` mode.
+
+UPDATE (Jan'20): I added bindings for python and removed most of the "old" exmaple code in order to shrink the dependencies to the minimum. See the python example.
 
 If you have any issues or questions about the code, please contact me https://www.vision.rwth-aachen.de/person/13/
 
