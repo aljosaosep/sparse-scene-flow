@@ -99,38 +99,6 @@ pybind11::array_t<double> compute_vo(const pybind11::array_t<float> &left1, cons
     pybind_to_raw(right2,right_img_2,rows, cols);
 
 
-//    // ======= SHOULD BE A FNC =========================================
-//    auto left1_buff = left1.unchecked<2>(); // x must have ndim = 3; can be non-writeable
-//    auto left2_buff = left2.unchecked<2>(); // x must have ndim = 3; can be non-writeable
-//    auto right1_buff = right1.unchecked<2>(); // x must have ndim = 3; can be non-writeable
-//    auto right2_buff = right2.unchecked<2>(); // x must have ndim = 3; can be non-writeable
-//
-//    int rows = left1_buff.shape(0);
-//    int cols = left1_buff.shape(1);
-//
-//    // TODO: check that dims match
-//    std::cout << "Image dims: " << rows << ", " << cols << std::endl;
-//
-//    // Alloc buffers for 4 images
-//    uint8_t* left_img_1  = (uint8_t*)malloc(cols*rows*sizeof(uint8_t));
-//    uint8_t* right_img_1 = (uint8_t*)malloc(cols*rows*sizeof(uint8_t));
-//    uint8_t* left_img_2  = (uint8_t*)malloc(cols*rows*sizeof(uint8_t));
-//    uint8_t* right_img_2 = (uint8_t*)malloc(cols*rows*sizeof(uint8_t));
-//
-//    int32_t k=0;
-//    for (ssize_t i = 0; i<rows; i++) {
-//        for (ssize_t j = 0; j<cols; j++) {
-//
-//            left_img_1[k]  = (uint8_t)(left1_buff(i, j)*255);
-//            right_img_1[k] = (uint8_t)(right1_buff(i, j)*255);
-//            left_img_2[k]  = (uint8_t)(left2_buff(i, j)*255);
-//            right_img_2[k] = (uint8_t)(right2_buff(i, j)*255);
-//
-//            k++;
-//        }
-//    }
-//    // ======= SHOULD BE A FNC =========================================
-
     int32_t dims[] = {cols, rows, cols};
 
     // t=1
@@ -354,6 +322,87 @@ pybind11::array_t<double> compute_flow(const pybind11::array_t<float> &left1, co
 }
 
 
+class VOEstimator {
+public:
+    VOEstimator() {
+        //
+    }
+
+
+    ~VOEstimator() {
+        delete vo_;
+        vo_ = nullptr;
+
+        std::cout << "Cleared mem, bye!" << std::endl;
+    }
+
+    void init(const pybind11::array_t<float> &left, const pybind11::array_t<float> &right, float focal_len, float cu, float cv, float baseline) {
+        std::cout << "Initing stuff" << std::endl;
+
+        libviso2::VisualOdometryStereo::parameters param;
+        param.calib.f = focal_len;
+        param.calib.cu = cu;
+        param.calib.cv = cv;
+        param.base = baseline;
+
+        vo_ = new libviso2::VisualOdometryStereo(param);
+        libviso2::VisualOdometryStereo vo(param);
+
+        // Only push the first image pair
+        uint8_t *left_img_1, *right_img_1;
+        int rows, cols;
+        pybind_to_raw(left, left_img_1, rows, cols);
+        pybind_to_raw(right, right_img_1, rows, cols);
+        int32_t dims[] = {cols, rows, cols};
+        libviso2::Matrix frame_to_frame_motion;
+        vo_->process(left_img_1, right_img_1, dims);
+
+        // Free mem
+        free(left_img_1);
+        free(right_img_1);
+    }
+
+    pybind11::array_t<double> compute_pose(const pybind11::array_t<float> &left, const pybind11::array_t<float> &right) {
+        std::cout << "Proc stuff" << std::endl;
+
+        uint8_t *left_img_1, *right_img_1;
+        int rows, cols;
+        pybind_to_raw(left, left_img_1, rows, cols);
+        pybind_to_raw(right, right_img_1, rows, cols);
+        int32_t dims[] = {cols, rows, cols};
+        libviso2::Matrix frame_to_frame_motion;
+        bool flag = vo_->process(left_img_1, right_img_1, dims);
+
+
+        if (flag) {
+            frame_to_frame_motion = vo_->getMotion(); //libviso2::Matrix::inv(viso->getMotion());
+        } else {
+            std::cout << "VO error! Abort! TODO: handle this!" << std::endl;
+            // TODO: handle the exception
+        }
+
+        // Free mem
+        free(left_img_1);
+        free(right_img_1);
+
+        // Convert transformation -> numpy array
+        pybind11::array_t<double> result = pybind11::array_t<double>(4*4);
+        auto buf3 = result.request();
+        double *ptr3 = (double *)buf3.ptr;
+        for (int i=0; i<4; i++) {
+            for (int j=0; j<4; j++) {
+                ptr3[i*4 + j] = frame_to_frame_motion.val[i][j];
+            }
+        }
+
+        result.resize({4, 4});
+
+        return result;
+    }
+
+private:
+    libviso2::VisualOdometryStereo *vo_ = nullptr;
+};
 
 namespace py = pybind11;
 
@@ -372,6 +421,9 @@ PYBIND11_MODULE(pyinterface, m) {
         Add two numbers
         Some other explanation about the add function.
     )pbdoc");
+
+    py::class_<VOEstimator>(m, "VOEstimator")
+            .def(py::init<>()).def("init", &VOEstimator::init).def("compute_pose", &VOEstimator::compute_pose);
 
     m.def("compute_vo", &compute_vo, pybind11::return_value_policy::copy, R"pbdoc(
         Compute frame-to-frame egomotion
