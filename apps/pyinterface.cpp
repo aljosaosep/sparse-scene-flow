@@ -178,7 +178,7 @@ Eigen::Vector4d ProjTo3D_(float u1, float u2, float v, float f, float cu, float 
 
 std::vector<SUN::utils::scene_flow::VelocityInfo> GetSceneFlow(std::vector<libviso2::Matcher::p_match> quad_matches,
         const Eigen::Matrix4d Tr,
-        float f, float cu, float cv, float baseline, int rows, int cols, float dt, float max_velocity_ms) {
+        float f, float cu, float cv, float baseline, float dt, float max_velocity_ms) {
 
 
 //    cv::Mat velocity_map(rows, cols, CV_32FC3);
@@ -195,7 +195,9 @@ std::vector<SUN::utils::scene_flow::VelocityInfo> GetSceneFlow(std::vector<libvi
         Eigen::Vector4d p3d_c = ProjTo3D_(match.u1c, match.u2c, match.v1c, f, cu, cv, baseline); // p3d curr frame
         Eigen::Vector4d p3d_p = ProjTo3D_(match.u1p, match.u2p, match.v1p, f, cu, cv, baseline); // p3d prev frame
 
-        if (std::isnan(p3d_c[0]) || std::isnan(p3d_p[0])) continue;
+        if (std::isnan(p3d_c[0]) || std::isnan(p3d_p[0])) {
+            continue;
+        }
 
         const Eigen::Vector4d p3d_c_orig = p3d_c;
         const Eigen::Vector4d p3d_p_orig = p3d_p;
@@ -207,8 +209,8 @@ std::vector<SUN::utils::scene_flow::VelocityInfo> GetSceneFlow(std::vector<libvi
         //p3d_c.head<3>() = camera.ground_model()->ProjectPointToGround(p3d_c.head<3>());
         //p3d_p.head<3>() = camera.ground_model()->ProjectPointToGround(p3d_p.head<3>());
 
-        int max_dist = 90;
-        int max_lat = 30;
+        float max_dist = 20.0; //90;
+        float max_lat = 15.0; //30;
         if (std::fabs(p3d_c[0]) > max_lat || std::fabs(p3d_c[2]) > max_dist || std::fabs(p3d_p[0]) > max_lat || std::fabs(p3d_p[2]) > max_dist) {
             continue;
         }
@@ -281,7 +283,7 @@ pybind11::array_t<double> compute_flow(const pybind11::array_t<float> &left1, co
 
 
 
-    auto sparse_flow_info =  GetSceneFlow(m2, ego, focal_len, cu, cv,  baseline, rows, cols, dt, velocity_thresh);
+    auto sparse_flow_info =  GetSceneFlow(m2, ego, focal_len, cu, cv,  baseline, dt, velocity_thresh);
     //sparse_flow_info = std::get<1>(flow_result);
     //sparse_flow_map = std::get<0>(flow_result);
 
@@ -330,23 +332,30 @@ public:
 
 
     ~VOEstimator() {
-        delete vo_;
-        vo_ = nullptr;
+        if (vo_ != nullptr) {
+            delete vo_;
+            vo_ = nullptr;
+        }
+
+        if (sf_matcher_ != nullptr) {
+            delete  sf_matcher_;
+            sf_matcher_ = nullptr;
+        }
 
         std::cout << "Cleared mem, bye!" << std::endl;
     }
 
-    void init(const pybind11::array_t<float> &left, const pybind11::array_t<float> &right, float focal_len, float cu, float cv, float baseline) {
+    void init(const pybind11::array_t<float> &left, const pybind11::array_t<float> &right, float focal_len, float cu, float cv, float baseline,
+            bool compute_scene_flow = false) {
         std::cout << "Initing stuff" << std::endl;
 
-        libviso2::VisualOdometryStereo::parameters param;
-        param.calib.f = focal_len;
-        param.calib.cu = cu;
-        param.calib.cv = cv;
-        param.base = baseline;
+        //libviso2::VisualOdometryStereo::parameters param;
+        param_.calib.f = focal_len;
+        param_.calib.cu = cu;
+        param_.calib.cv = cv;
+        param_.base = baseline;
 
-        vo_ = new libviso2::VisualOdometryStereo(param);
-        libviso2::VisualOdometryStereo vo(param);
+        vo_ = new libviso2::VisualOdometryStereo(param_);
 
         // Only push the first image pair
         uint8_t *left_img_1, *right_img_1;
@@ -356,6 +365,31 @@ public:
         int32_t dims[] = {cols, rows, cols};
         libviso2::Matrix frame_to_frame_motion;
         vo_->process(left_img_1, right_img_1, dims);
+
+        // Init scene-flow matcher
+        if (compute_scene_flow == true ){
+            libviso2::Matcher::parameters matcher_params;
+
+            matcher_params.nms_n = 5;   // non-max-suppression: min. distance between maxima (in pixels)
+            matcher_params.nms_tau = 50;  // non-max-suppression: interest point peakiness threshold
+            matcher_params.match_binsize = 50;  // matching bin width/height (affects efficiency only)
+            matcher_params.match_radius = 200; // matching radius (du/dv in pixels)
+            matcher_params.match_disp_tolerance = 1;   // du tolerance for stereo matches (in pixels)
+            matcher_params.outlier_disp_tolerance = 5;   // outlier removal: disparity tolerance (in pixels)
+            matcher_params.outlier_flow_tolerance = 5;   // outlier removal: flow tolerance (in pixels)
+            matcher_params.multi_stage = 1;   // 0=disabled,1=multistage matching (denser and faster)
+            matcher_params.half_resolution = 0;   // 0=disabled,1=match at half resolution, refine at full resolution
+            matcher_params.refinement = 2;   // refinement (0=none,1=pixel,2=subpixel)
+
+            // bucketing parameters
+            //matcher_params.max_features         = 4;
+            //matcher_params.bucket_width         = 10;
+            //matcher_params.bucket_height        = 10;
+
+            // Make sf matcher open for busisness
+            this->sf_matcher_ = new libviso2::Matcher(matcher_params);
+            this->sf_matcher_->pushBack(left_img_1, right_img_1, dims, false);
+        }
 
         // Free mem
         free(left_img_1);
@@ -400,8 +434,67 @@ public:
         return result;
     }
 
+    pybind11::array_t<double> compute_flow(const pybind11::array_t<float> &left, const pybind11::array_t<float> &right,
+            float dt, float velocity_thresh) {
+
+
+        libviso2::Matrix pose = libviso2::Matrix::eye(4);
+        Eigen::Matrix<double,4,4> ego = Eigen::MatrixXd::Identity(4,4); // Current pose
+
+        uint8_t *left_img_1, *right_img_1;
+        int rows, cols;
+        pybind_to_raw(left, left_img_1, rows, cols);
+        pybind_to_raw(right, right_img_1, rows, cols);
+        int32_t dims[] = {cols, rows, cols};
+
+        // Push images
+        sf_matcher_->pushBack(left_img_1, right_img_1, dims, false);
+
+        std::vector<libviso2::Matcher::p_match> matches;
+
+        // Get quad matches
+        sf_matcher_->matchFeatures(2); // 2 ... quad matching
+        auto quad_matches = sf_matcher_->getMatches();
+
+        auto sparse_flow_info =  GetSceneFlow(quad_matches, ego, param_.calib.f, param_.calib.cu, param_.calib.cv,  param_.base,
+                dt, velocity_thresh);
+
+        // Free mem
+        free(left_img_1);
+        free(right_img_1);
+
+        int row_len = 3; //6+2;
+        pybind11::array_t<double> result = pybind11::array_t<double>(sparse_flow_info.size()*row_len);
+        auto buf3 = result.request();
+        double *ptr3 = (double *)buf3.ptr;
+        for (int i=0; i<sparse_flow_info.size(); i++) {
+            auto info = sparse_flow_info.at(i);
+            Eigen::Vector3d p = info.p_3d;
+            Eigen::Vector3d p_prev = info.p_prev;
+
+            ptr3[i*row_len + 0] = p[0];
+            ptr3[i*row_len + 1] = p[1];
+            ptr3[i*row_len + 2] = p[2];
+
+//            ptr3[i*6 + 3] = p_prev[0];
+//            ptr3[i*6 + 4] = p_prev[1];
+//            ptr3[i*6 + 5] = p_prev[2];
+//
+//            ptr3[i*6 + 6] = info.p[0];
+//            ptr3[i*6 + 7] = info.p[1];
+//            ptr3[i*6 + 8] = p_prev[2];
+//            ptr3[i*6 + 9] = p_prev[2];
+
+        }
+        result.resize({static_cast<int>(sparse_flow_info.size()), row_len});
+
+        return result;
+    }
+
 private:
     libviso2::VisualOdometryStereo *vo_ = nullptr;
+    libviso2::Matcher *sf_matcher_ = nullptr;
+    libviso2::VisualOdometryStereo::parameters param_;
 };
 
 namespace py = pybind11;
@@ -423,7 +516,7 @@ PYBIND11_MODULE(pyinterface, m) {
     )pbdoc");
 
     py::class_<VOEstimator>(m, "VOEstimator")
-            .def(py::init<>()).def("init", &VOEstimator::init).def("compute_pose", &VOEstimator::compute_pose);
+            .def(py::init<>()).def("init", &VOEstimator::init).def("compute_pose", &VOEstimator::compute_pose).def("compute_flow", &VOEstimator::compute_flow);
 
     m.def("compute_vo", &compute_vo, pybind11::return_value_policy::copy, R"pbdoc(
         Compute frame-to-frame egomotion
